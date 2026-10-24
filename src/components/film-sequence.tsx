@@ -5,11 +5,11 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { useSite } from "./providers";
 
-const FRAMES = 112;
+const FRAMES = 107;
 const src = (i: number) => `/media/seq/${String(i + 1).padStart(3, "0")}.webp`;
 
 /**
- * Scroll-scrubbed film: the Ventura Mall ad decoded into 112 stills and painted
+ * Scroll-scrubbed film: the Ventura Mall ad decoded into 107 stills and painted
  * to a canvas frame-by-frame as the visitor scrolls. A blurred copy of the
  * same frame washes the background so the portrait film fills any screen.
  */

@@ -28,7 +28,7 @@ npm run dev                  # http://localhost:3000
 
 1. **Preloader**: the gold logo burns in as the first frames load.
 2. **Hero**: a WebGL fire bed with an arch window playing the official Ventura film. The headline rises letter by letter. On scroll, the arch opens into a full-bleed, defocused film plate and the manifesto lights up word by word.
-3. **Film**: the ad decoded into 112 frames and scrubbed frame by frame with scroll (Apple-style), with captions keyed to the action.
+3. **Film**: the ad decoded into 107 frames and scrubbed frame by frame with scroll (Apple-style), with captions keyed to the action.
 4. **The Ritual**: a pinned horizontal walk through the four beats. The green/red card flips in 3D as you go.
 5. **Cuts**: the churrasco menu, with a sticky arch cycling through real grill moments.
 6. **Market Table**: a parchment "printed menu" interlude that rises as an arch.
@@ -74,7 +74,7 @@ Everything lives in **`src/content/restaurant.ts`**. Fields marked `CONFIRM` are
 All footage comes from the official Ventura Mall rodizio film (`media-src/rodizio-ventura.mp4`). `npm run media` (requires ffmpeg) regenerates:
 
 - `public/media/rodizio.{mp4,webm}`: the hero loop
-- `public/media/seq/*.webp`: 112 frames for the scroll film
+- `public/media/seq/*.webp`: 107 frames for the scroll film
 - `public/media/stills/*.webp`: 8 hand-picked stills
 
 To add photography later (interior, Market Table, bar, team), drop it in `public/media/` and reference it from the section components.

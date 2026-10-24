@@ -7,12 +7,12 @@ OUT="public/media"
 mkdir -p "$OUT/seq" "$OUT/stills"
 
 # 1. Ambient loop (no audio, faststart) — trimmed before the end card
-ffmpeg -v error -y -i "$SRC" -t 9.3 -an -vf "scale=720:1280" -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p -movflags +faststart "$OUT/rodizio.mp4"
-ffmpeg -v error -y -i "$SRC" -t 9.3 -an -vf "scale=720:1280" -c:v libvpx-vp9 -b:v 0 -crf 36 -row-mt 1 "$OUT/rodizio.webm"
+ffmpeg -v error -y -i "$SRC" -t 8.95 -an -vf "scale=720:1280" -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p -movflags +faststart "$OUT/rodizio.mp4"
+ffmpeg -v error -y -i "$SRC" -t 8.95 -an -vf "scale=720:1280" -c:v libvpx-vp9 -b:v 0 -crf 36 -row-mt 1 "$OUT/rodizio.webm"
 
 # 2. Scroll-scrubbed frame sequence (12 fps → ~112 frames)
 rm -f "$OUT"/seq/*.webp
-ffmpeg -v error -y -i "$SRC" -t 9.3 -vf "fps=12,scale=540:960" -c:v libwebp -quality 72 "$OUT/seq/%03d.webp"
+ffmpeg -v error -y -i "$SRC" -t 8.95 -vf "fps=12,scale=540:960" -c:v libwebp -quality 72 "$OUT/seq/%03d.webp"
 
 # 3. Hand-picked stills (timestamps chosen frame by frame)
 still () { ffmpeg -v error -y -ss "$1" -i "$SRC" -frames:v 1 -vf "scale=720:1280" -c:v libwebp -quality 86 "$OUT/stills/$2.webp"; }
