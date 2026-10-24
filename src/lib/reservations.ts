@@ -1,15 +1,13 @@
 import "server-only";
-import { promises as fs } from "fs";
-import path from "path";
 import { randomBytes } from "crypto";
 import { BOOKING, HOURS, RESTAURANT } from "@/content/restaurant";
+import { readDoc, StaleWriteError, writeDoc } from "./store";
 
 /**
- * Reservation engine + JSON file store.
+ * Reservation engine (storage lives in ./store: Vercel Blob or a local file).
  *
  * Bolivia has no daylight saving (UTC-4 all year), so every date/time here is
- * restaurant-local wall time ("YYYY-MM-DD", "HH:MM"). For a multi-instance
- * deployment swap `load`/`save` for a database — the rest stays the same.
+ * restaurant-local wall time ("YYYY-MM-DD", "HH:MM").
  */
 
 export type Status = "confirmed" | "cancelled" | "seated" | "no_show";
@@ -58,35 +56,39 @@ interface DB {
   leads: Lead[];
 }
 
-const FILE = process.env.RESERVATIONS_FILE || path.join(process.cwd(), "data", "reservations.json");
 const UTC_OFFSET_MIN = -4 * 60;
 
 let queue: Promise<unknown> = Promise.resolve();
 
+function normalise(data: Partial<DB> | null): DB {
+  return { reservations: data?.reservations ?? [], waitlist: data?.waitlist ?? [], leads: data?.leads ?? [] };
+}
+
 async function load(): Promise<DB> {
-  try {
-    const raw = await fs.readFile(FILE, "utf8");
-    const db = JSON.parse(raw) as Partial<DB>;
-    return { reservations: db.reservations ?? [], waitlist: db.waitlist ?? [], leads: db.leads ?? [] };
-  } catch {
-    return { reservations: [], waitlist: [], leads: [] };
-  }
+  return normalise((await readDoc<Partial<DB>>()).data);
 }
 
-async function save(db: DB) {
-  await fs.mkdir(path.dirname(FILE), { recursive: true });
-  const tmp = `${FILE}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(db, null, 2));
-  await fs.rename(tmp, FILE);
-}
-
-/** Serialises read-modify-write cycles so concurrent bookings can't oversell. */
+/**
+ * Read-modify-write with optimistic concurrency. Calls are queued within this
+ * instance, and the store rejects a write whose source changed underneath it
+ * (another instance booked first), in which case we re-run on fresh data.
+ * Results with `ok: false` change nothing and skip the write.
+ */
 function mutate<T>(fn: (db: DB) => T | Promise<T>): Promise<T> {
   const run = queue.then(async () => {
-    const db = await load();
-    const out = await fn(db);
-    await save(db);
-    return out;
+    for (let attempt = 0; ; attempt++) {
+      const snap = await readDoc<Partial<DB>>();
+      const db = normalise(snap.data);
+      const out = await fn(db);
+      if ((out as { ok?: boolean })?.ok === false) return out;
+      try {
+        await writeDoc(db, snap.version);
+        return out;
+      } catch (err) {
+        if (err instanceof StaleWriteError && attempt < 5) continue;
+        throw err;
+      }
+    }
   });
   queue = run.catch(() => undefined);
   return run;

@@ -81,4 +81,15 @@ To add photography later (interior, Market Table, bar, team), drop it in `public
 
 ## Deploying
 
-The JSON reservation store needs a **persistent disk**: a VPS, Railway, Render or Fly.io with a volume. On serverless hosts such as Vercel the filesystem is ephemeral. There, replace `load`/`save` in `src/lib/reservations.ts` with a database (Postgres, Supabase, Upstash). Nothing else needs to change.
+Live on Vercel as **fogodechao-bo**. Every push to the repository's default branch redeploys it.
+
+Reservations live in a private **Vercel Blob** store connected to the project, which sets `BLOB_READ_WRITE_TOKEN` automatically. Each write is conditional on the version it read, so two guests booking the last table at the same moment can't both get it. Without that token (local dev, or any Node host) the same data lives in `./data/reservations.json`.
+
+Project environment variables:
+
+| Variable | Set by |
+| --- | --- |
+| `BLOB_READ_WRITE_TOKEN` | Vercel, when the Blob store is connected |
+| `ADMIN_PASSWORD` | you; protects `/admin` |
+| `ANTHROPIC_API_KEY` | you; turns Sofía on |
+| `NEXT_PUBLIC_SITE_URL` | the public URL, used for share previews |
