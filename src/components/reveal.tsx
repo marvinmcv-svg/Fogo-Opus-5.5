@@ -57,7 +57,8 @@ export function Reveal({ as: Tag = "div", children, className, type = "lines", d
   );
 
   return (
-    <Tag ref={ref} className={className}>
+    // Remount on language change: SplitText rewrites this node's children, so React must not reuse it.
+    <Tag key={lang} ref={ref} className={className}>
       {children}
     </Tag>
   );

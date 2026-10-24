@@ -34,9 +34,11 @@ export function Preloader() {
     let raf = 0;
     const loop = () => {
       const timeCap = Math.min(1, (performance.now() - started) / minMs);
-      progress.v += (Math.min(target.v, timeCap) - progress.v) * 0.08;
+      const goal = Math.min(target.v, timeCap);
+      // Ease toward the goal but always make visible progress, even at low frame rates
+      progress.v = Math.min(goal, progress.v + Math.max((goal - progress.v) * 0.12, 0.004));
       setN(Math.round(progress.v * 100));
-      if (progress.v > 0.995) finish();
+      if (progress.v >= 1) finish();
       else raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

@@ -30,13 +30,15 @@ export function Hero() {
   const { t, ready, lang } = useSite();
   const stage = useRef<HTMLElement>(null);
   const left = useCountdown(RESTAURANT.openingDate);
+  const introRef = useRef<gsap.core.Timeline | null>(null);
+  const readyRef = useRef(ready);
+  const introDone = useRef(false);
 
   const opening = new Date(RESTAURANT.openingDate);
   const openingLabel = opening.toLocaleDateString(lang === "es" ? "es-BO" : "en-GB", { day: "2-digit", month: "long", year: "numeric", timeZone: "America/La_Paz" });
 
   useGSAP(
     () => {
-      if (!ready) return;
       const q = gsap.utils.selector(stage);
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const film = q("[data-film]")[0] as HTMLElement;
@@ -48,7 +50,7 @@ export function Hero() {
         const s = film.getBoundingClientRect();
         return { top: r.top - s.top, right: s.right - r.right, bottom: s.bottom - r.bottom, left: r.left - s.left, radius: r.width / 2 };
       };
-      const state = { p: 0, reveal: reduce ? 1 : 0 };
+      const state = { p: 0, reveal: reduce || introDone.current ? 1 : 0 };
       const paint = () => {
         const a = archInset();
         const k = 1 - state.p;
@@ -62,8 +64,9 @@ export function Hero() {
       const split2 = SplitText.create(q("[data-l2]"), { type: "chars", mask: "chars" });
       const words = SplitText.create(q("[data-manifesto]"), { type: "words" });
 
-      if (!reduce) {
-        const intro = gsap.timeline({ delay: 0.15 });
+      if (!reduce && !introDone.current) {
+        const intro = gsap.timeline({ delay: 0.15, paused: !readyRef.current, onComplete: () => void (introDone.current = true) });
+        introRef.current = intro;
         intro
           .to(state, { reveal: 1, duration: 1.8, ease: "expo.inOut", onUpdate: paint })
           .from(split1.chars, { yPercent: 115, duration: 1.3, stagger: 0.035, ease: "expo.out" }, 0.55)
@@ -86,6 +89,7 @@ export function Hero() {
           .to(q("[data-fade]"), { opacity: 0, y: -30, duration: 0.4 }, 0)
           .to(q("[data-video]"), { filter: "blur(10px) saturate(1.1)", scale: 1.08, duration: 1 }, 0.3)
           .to(q("[data-shade]"), { opacity: 0.78, duration: 0.9 }, 0.3)
+          .to(q("[data-mwrap]"), { opacity: 1, duration: 0.15 }, 1.0)
           .fromTo(q("[data-mlabel]"), { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3 }, 1.05)
           .to(words.words, { opacity: 1, stagger: 0.04, duration: 0.2 }, 1.15)
           .to({}, { duration: 0.4 });
@@ -96,8 +100,13 @@ export function Hero() {
         mm.revert();
       };
     },
-    { scope: stage, dependencies: [ready, lang], revertOnUpdate: true },
+    { scope: stage, dependencies: [lang], revertOnUpdate: true },
   );
+
+  useEffect(() => {
+    readyRef.current = ready;
+    if (ready) introRef.current?.play();
+  }, [ready]);
 
   const parts = left === null ? null : [Math.floor(left / 864e5), Math.floor(left / 36e5) % 24, Math.floor(left / 6e4) % 60, Math.floor(left / 1e3) % 60];
 
@@ -136,10 +145,10 @@ export function Hero() {
       {/* Title */}
       <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center px-[var(--gutter)] pt-10 text-center">
         <h1 className="display w-full text-[clamp(3.3rem,10.5vw,11.5rem)] text-bone">
-          <span data-l1 className="block -translate-x-[6%] md:-translate-x-[14%]">
+          <span key={`l1-${lang}`} data-l1 className="block -translate-x-[6%] md:-translate-x-[14%]">
             {t.hero.line1}
           </span>
-          <span data-l2 className="gold-text block translate-x-[6%] italic md:translate-x-[16%]">
+          <span key={`l2-${lang}`} data-l2 className="block translate-x-[6%] italic text-gold-soft [text-shadow:0_0_40px_rgba(229,86,42,.35)] md:translate-x-[16%]">
             {t.hero.line2}
           </span>
         </h1>
@@ -179,12 +188,12 @@ export function Hero() {
       </div>
 
       {/* Manifesto, revealed over the opened film */}
-      <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center px-[var(--gutter)]">
+      <div data-mwrap className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center px-[var(--gutter)] opacity-0">
         <div className="max-w-[1150px] text-center">
           <p data-mlabel className="eyebrow mb-8 opacity-0">
             {t.manifesto.label}
           </p>
-          <p data-manifesto className="display text-[clamp(1.75rem,4.1vw,4.2rem)] leading-[1.08] text-bone">
+          <p key={`m-${lang}`} data-manifesto className="display text-[clamp(1.75rem,4.1vw,4.2rem)] leading-[1.08] text-bone">
             {t.manifesto.text}
           </p>
         </div>

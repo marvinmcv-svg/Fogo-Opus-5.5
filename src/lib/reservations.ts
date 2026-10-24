@@ -2,7 +2,7 @@ import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
 import { randomBytes } from "crypto";
-import { BOOKING, HOURS } from "@/content/restaurant";
+import { BOOKING, HOURS, RESTAURANT } from "@/content/restaurant";
 
 /**
  * Reservation engine + JSON file store.
@@ -116,6 +116,12 @@ function dayOfWeek(date: string) {
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Opening night in restaurant-local wall time; nothing is bookable before it. */
+const OPENING = (() => {
+  const d = new Date(new Date(RESTAURANT.openingDate).getTime() + UTC_OFFSET_MIN * 60_000);
+  return { date: d.toISOString().slice(0, 10), minutes: d.getUTCHours() * 60 + d.getUTCMinutes() };
+})();
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** Every bookable slot for a date, ignoring capacity. */
@@ -146,6 +152,7 @@ export function validateRequest(date: string, time: string | undefined, partySiz
     return `Parties larger than ${BOOKING.maxPartyOnline} are handled by the events team (use the private event request).`;
   const now = localNow();
   if (date < now.date) return "That date is in the past.";
+  if (date < OPENING.date) return `We open on ${OPENING.date} at ${toHHMM(OPENING.minutes)}; reservations start then.`;
   const max = new Date(`${now.date}T12:00:00Z`);
   max.setUTCDate(max.getUTCDate() + BOOKING.maxDaysAhead);
   if (date > max.toISOString().slice(0, 10)) return `Bookings open up to ${BOOKING.maxDaysAhead} days ahead.`;
@@ -153,6 +160,7 @@ export function validateRequest(date: string, time: string | undefined, partySiz
 }
 
 function slotIsFuture(date: string, time: string) {
+  if (date === OPENING.date && toMin(time) < OPENING.minutes) return false;
   const now = localNow();
   if (date > now.date) return true;
   return date === now.date && toMin(time) >= now.minutes + BOOKING.minNoticeMinutes;

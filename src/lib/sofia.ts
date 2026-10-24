@@ -291,7 +291,7 @@ export async function runTool(name: string, rawInput: unknown): Promise<{ conten
   if (!parsed.success) {
     return { content: JSON.stringify({ INVALID_INPUT: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`) }), isError: true, event: null };
   }
-  const input = parsed.data as Record<string, never>;
+  const input: unknown = parsed.data;
   const fail = (error: string) => ({ content: JSON.stringify({ ok: false, error }), isError: true, event: null });
 
   switch (name as ToolName) {

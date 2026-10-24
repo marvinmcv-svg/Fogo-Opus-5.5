@@ -47,7 +47,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem("fogo-lang", l);
     } catch {}
-    requestAnimationFrame(() => ScrollTrigger.refresh());
+    requestAnimationFrame(() => {
+      ScrollTrigger.sort();
+      ScrollTrigger.refresh();
+    });
   };
 
   // Lenis smooth scroll driven by GSAP's ticker so ScrollTrigger stays in sync.
@@ -64,6 +67,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       l.destroy();
     };
   }, []);
+
+  // Recompute every trigger once fonts and the first frames are in
+  useEffect(() => {
+    if (!ready) return;
+    ScrollTrigger.sort();
+    ScrollTrigger.refresh();
+  }, [ready]);
 
   useEffect(() => {
     if (!lenis) return;
